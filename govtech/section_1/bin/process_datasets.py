@@ -1,7 +1,7 @@
 from pyspark.context import SparkContext
 from pyspark.sql.session import SparkSession
 import pyspark
-from pyspark.sql.functions import split, col, size, when, to_date, coalesce, date_format, months_between, lit, current_date, round, trim, sha2, concat
+from pyspark.sql.functions import split, col, size, when, to_date, coalesce, date_format, months_between, lit, current_date, round, trim, sha2, concat, udf, regexp_replace, lower
 import sys
 from datetime import datetime
 import logging
@@ -23,6 +23,12 @@ def cast_date_string(col, formats=("yyyy-MM-dd", "dd-MM-yyyy", "yyyy/MM/dd" ,"yy
 def cast_date(col, formats=("yyyy-MM-dd", "dd-MM-yyyy", "yyyy/MM/dd" ,"yyyy MM dd", "MM/dd/yyyy",  "yyyyMMdd")):
     return coalesce(*[to_date(col, f) for f in formats])
 
+# Remove titles and honorifics
+def replace_titles(col, titles=('\\.', 'mrs', 'mr', 'miss', 'dvm', 'md', 'dr', 'jr', 'sir', 'lady', 'lord')):
+	for t in titles:
+		col = regexp_replace(lower(col), t, '')
+	return col
+
 # Start spark session
 def init_spark(app_name):
 	logging.info("STARTING SPARK SESSION")
@@ -30,9 +36,9 @@ def init_spark(app_name):
 	spark.conf.set("spark.sql.legacy.timeParserPolicy","LEGACY")
 	return spark
 
+# Read all CSV files in the input directory
 def read_input(spark):
-	input_dir = app_folder + '/input/latest/' + '*.csv'
-	# Read all CSV files in the input directory
+	input_dir = app_folder + '/input/latest/' + '*.csv'	
 	logging.info("READING INPUT FILES")
 	return spark.read.csv(input_dir, header='true')
 
@@ -45,8 +51,10 @@ def set_unsuccessful_output(day_now,hour_now):
 # Split name into first_name and last_name
 def process_name(df):
 	logging.info("PROCESSING NAMES")
-	df = df.withColumn('name', when(trim(col('name'))==lit(''),None).otherwise(col('name')))
-	split_col = pyspark.sql.functions.split(df['name'], ' ')
+
+	df = df.withColumn('name_formatted',replace_titles(col('name')))
+	df = df.withColumn('name_formatted', when(trim(col('name_formatted'))==lit(''),None).otherwise(trim(col('name_formatted'))))
+	split_col = pyspark.sql.functions.split(df['name_formatted'], ' ')
 	df = df.withColumn('first_name', split_col.getItem(0))
 	df = df.withColumn('last_name', split_col.getItem(size(split_col)-1))
 	return df
@@ -58,19 +66,58 @@ def process_birthday(df):
 	df = df.withColumn('birthday', cast_date(col('date_of_birth')))
 	return df
 
-# Remove any rows which do not have a name field (treat this as unsuccessful applications)
+# Process tag unsuccessful applications 
 def process_unsuccessful_applications(df):
 	logging.info("PROCESSING UNSUCCESSFUL APPLICATIONS")
-	df = df.withColumn('unsuccessful', when(col('name').isNull(),True)
+
+	#check for 8 digits while ignoring whitespaces
+	eight_digits_regex = """^\\s*(\\d\\s*){8}$"""
+
+	#(?!\.) don't allow . at start
+	#(?!.*\.\.) don't allow consecutive dots
+	#(?!.*\.$) don't allow dots at the end
+	#(\\.com|\\.net) must end with either .com or .net
+	#[^.]@[^.] don't allow dots infront or behind @
+	#[a-zA-Z0-9._%+-] allow a-Z, A-Z, 0-9, .%+-
+	#[a-zA-Z0-9.+-] allow a-z, A-Z, 0-9, .+-
+	email_regex = """^(?!\\.)(?!.*\\.$)(?!.*\\.\\.)[a-zA-Z0-9._%+-]+[^.]@[^.][a-zA-Z0-9.+-]+(\\.com|\\.net)$"""
+
+	df = df.withColumn('start_of_year',lit('2022-01-01'))
+
+	#Check invalid names
+	df = df.withColumn('invalid_name',when(col('name').isNull(),True)
 		.when(trim(col('name').cast('string'))=='',True)
-		.otherwise(False)
-		)
+		.otherwise(False))
+
+	#check invalid mobile numbers
+	df = df.withColumn('invalid_mobile',when(col('mobile_no').rlike(eight_digits_regex)==False,True).otherwise(False))
+
+	#Check invalid emails
+	df = df.withColumn('invalid_email',when(col('email').rlike(email_regex)==False,True).otherwise(False))
+
+	#Check if age is below 18 years old as of 2022-01-01
+	df = df.withColumn('below_18',when(months_between(col('start_of_year'),col('birthday'))/lit(12) < 18.0,True).otherwise(False))
+
+	# df = df.withColumn('unsuccessful', when(col('name').isNull(),True)
+	# 	.when(trim(col('name').cast('string'))=='',True)
+	# 	.when(col('mobile_no').rlike(eight_digits_regex)==False,True)
+	# 	.when(col('email').rlike(email_regex)==False,True)
+	# 	.when(months_between(col('start_of_year'),col('birthday'))/lit(12) < 18.0,True)
+	# 	.otherwise(False)
+	# 	)
+
+	df = df.withColumn('unsuccessful', when(col('invalid_name'),True)
+		.when(col('invalid_mobile'),True)
+		.when(col('invalid_email'),True)
+		.when(col('below_18'),True)
+		.otherwise(False))
+
 	return df
 
-# Create a new field named above_18 based on the applicant's birthday
+# Create a new field named above_18 based on the applicant's birthday. Assuming birthday is derived based on current_date
 def process_above_18(df):
 	logging.info("PROCESSING AGES")
-	df = df.withColumn("above_18",when(months_between(current_date(),col('birthday'))/lit(12) > 18.0,True)
+	df = df.withColumn("above_18",when(months_between(current_date(),col('birthday'))/lit(12) >= 18.0,True)
 		.otherwise(False))
 	return df
 
@@ -85,10 +132,15 @@ def process_membership_id(df):
 def filter_and_write(df):
 	# Filtering unsuccessful applications
 	unsuccessful_df = df.filter(col('unsuccessful')==True)
+	unsuccessful_df = unsuccessful_df.withColumn('unsuccessful_reason', when(col('invalid_name'),'invalid name')
+		.when(col('invalid_mobile'),'invalid mobile')
+		.when(col('invalid_email'),'invalid email')
+		.when(col('below_18'),'below 18')
+		.otherwise('NA'))
 	successful_df   = df.filter(col('unsuccessful')==False)
 
 	successful_df = successful_df.select(col('first_name'),col('last_name'),col('birthday_formatted'),col('above_18'),col('membership_id'))
-	unsuccessful_df = unsuccessful_df.select(col('first_name'),col('last_name'),col('birthday_formatted'),col('above_18'),col('membership_id'))
+	unsuccessful_df = unsuccessful_df.select(col('name'),col('email'),col('date_of_birth'),col('mobile_no'),col('unsuccessful_reason'))
 
 	# Get current date time
 	now = datetime.now()
@@ -134,3 +186,4 @@ if __name__ == "__main__":
 		main()
 	except Exception as e:
 		logging.error("Exception: " + str(e))
+		sys.exit(1)
