@@ -98,14 +98,6 @@ def process_unsuccessful_applications(df):
 	#Check if age is below 18 years old as of 2022-01-01
 	df = df.withColumn('below_18',when(months_between(col('start_of_year'),col('birthday'))/lit(12) < 18.0,True).otherwise(False))
 
-	# df = df.withColumn('unsuccessful', when(col('name').isNull(),True)
-	# 	.when(trim(col('name').cast('string'))=='',True)
-	# 	.when(col('mobile_no').rlike(eight_digits_regex)==False,True)
-	# 	.when(col('email').rlike(email_regex)==False,True)
-	# 	.when(months_between(col('start_of_year'),col('birthday'))/lit(12) < 18.0,True)
-	# 	.otherwise(False)
-	# 	)
-
 	df = df.withColumn('unsuccessful', when(col('invalid_name'),True)
 		.when(col('invalid_mobile'),True)
 		.when(col('invalid_email'),True)
@@ -114,11 +106,11 @@ def process_unsuccessful_applications(df):
 
 	return df
 
-# Create a new field named above_18 based on the applicant's birthday. Assuming birthday is derived based on current_date
+# Create a new field named above_18 based on the applicant's birthday.
 def process_above_18(df):
 	logging.info("PROCESSING AGES")
-	df = df.withColumn("above_18",when(months_between(current_date(),col('birthday'))/lit(12) >= 18.0,True)
-		.otherwise(False))
+	df = df.withColumn("above_18",when(col('below_18'),False)
+		.otherwise(True))
 	return df
 
 # Membership IDs for successful applications should be the user's last name, 
