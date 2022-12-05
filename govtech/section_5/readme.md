@@ -22,33 +22,34 @@ From the results below, seems like GaussianNB had the best result with 0.33 accu
 
  Accuracy  ...  Time Taken
  
-Model                                    ...            
-GaussianNB                         0.33  ...        0.00
-QuadraticDiscriminantAnalysis      0.31  ...        0.00
-AdaBoostClassifier                 0.29  ...        0.06
-BernoulliNB                        0.29  ...        0.00
-SGDClassifier                      0.27  ...        0.01
-SVC                                0.27  ...        0.06
-Perceptron                         0.27  ...        0.00
-DummyClassifier                    0.23  ...        0.00
-CalibratedClassifierCV             0.22  ...        0.23
-NuSVC                              0.23  ...        0.19
-LogisticRegression                 0.22  ...        0.01
-RidgeClassifierCV                  0.22  ...        0.00
-RidgeClassifier                    0.22  ...        0.00
-LinearSVC                          0.22  ...        0.07
-LinearDiscriminantAnalysis         0.22  ...        0.00
-PassiveAggressiveClassifier        0.24  ...        0.01
-NearestCentroid                    0.20  ...        0.01
-KNeighborsClassifier               0.17  ...        0.01
-BaggingClassifier                  0.17  ...        0.01
-LGBMClassifier                     0.16  ...        0.09
-LabelSpreading                     0.14  ...        0.05
-LabelPropagation                   0.14  ...        0.04
-RandomForestClassifier             0.12  ...        0.08
-ExtraTreesClassifier               0.12  ...        0.07
-DecisionTreeClassifier             0.12  ...        0.00
-ExtraTreeClassifier                0.12  ...        0.00
+|Models                             |Score            |Time| 
+|:----------------------------------|:----------------|:---|      
+|GaussianNB                         |0.33  ...        |0.00|
+|QuadraticDiscriminantAnalysis      |0.31  ...        |0.00|
+|AdaBoostClassifier                 |0.29  ...        |0.06|
+|BernoulliNB                        |0.29  ...        |0.00|
+|SGDClassifier                      |0.27  ...        |0.01|
+|SVC                                |0.27  ...        |0.06|
+|Perceptron                         |0.27  ...        |0.00|
+|DummyClassifier                    |0.23  ...        |0.00|
+|CalibratedClassifierCV             |0.22  ...        |0.23|
+|NuSVC                              |0.23  ...        |0.19|
+|LogisticRegression                 |0.22  ...        |0.01|
+|RidgeClassifierCV                  |0.22  ...        |0.00|
+|RidgeClassifier                    |0.22  ...        |0.00|
+|LinearSVC                          |0.22  ...        |0.07|
+|LinearDiscriminantAnalysis         |0.22  ...        |0.00|
+|PassiveAggressiveClassifier        |0.24  ...        |0.01|
+|NearestCentroid                    |0.20  ...        |0.01|
+|KNeighborsClassifier               |0.17  ...        |0.01|
+|BaggingClassifier                  |0.17  ...        |0.01|
+|LGBMClassifier                     |0.16  ...        |0.09|
+|LabelSpreading                     |0.14  ...        |0.05|
+|LabelPropagation                   |0.14  ...        |0.04|
+|RandomForestClassifier             |0.12  ...        |0.08|
+|ExtraTreesClassifier               |0.12  ...        |0.07|
+|DecisionTreeClassifier             |0.12  ...        |0.00|
+|ExtraTreeClassifier                |0.12  ...        |0.00|
 
 Next, I run model.py to train GaussianNB model.
 The results as follows:
