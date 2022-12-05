@@ -7,9 +7,13 @@ Run check_skew.py and below is the result. Box-cox transformation gives the best
 Box-cox values = [unacc = -0.36623292  acc = 1.25076241 v-good = 2.47282076 good = -2.8678881 ]
 #
 Skewness was -0.98 before & is -1.6 after Log transformation.
+
 Skewness was -0.98 before & is -0.1 after Square transformation.
+
 Skewness was -0.98 before & is 0.86 after cube transformation.
+
 Skewness was -0.98 before & is 0.03 after Box-cox transformation.
+
 Skewness was -0.98 before & is 0.07 after Yeo-johnson transformation.
 
 
