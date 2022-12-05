@@ -27,5 +27,5 @@ Validation performed:
 
 Files
 1. Original input datasets file are placed in /input/latest folder. After job completes successfully, the files are archived into /input/archived folder.
-2. Successful and unsuccessful application output files can be found in /output folder.
+2. Successful and unsuccessful application output files can be found in /output folder. Kindly refer to the .csv files, not the .crc files.
 3. Application logs can be found in /logs folder.
