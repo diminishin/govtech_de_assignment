@@ -4,9 +4,7 @@
 As the distribution of 'class' is extremely skewed, I attempted to resolve the skewness of the 'class' column first. 
 Run check_skew.py and below is the result. Box-cox transformation gives the best transformation.
 
-#
 Box-cox values = [unacc = -0.36623292  acc = 1.25076241 v-good = 2.47282076 good = -2.8678881 ]
-#
 Skewness was -0.98 before & is -1.6 after Log transformation.
 Skewness was -0.98 before & is -0.1 after Square transformation.
 Skewness was -0.98 before & is 0.86 after cube transformation.
@@ -18,6 +16,7 @@ Next, I used lazypredict to attempt and find out which model give the best score
 From the results below, seems like GaussianNB had the best result with 0.33 accuracy. Although its still a low score, it is the best I can do with for now.
 
  Accuracy  ...  Time Taken
+ 
 Model                                    ...            
 GaussianNB                         0.33  ...        0.00
 QuadraticDiscriminantAnalysis      0.31  ...        0.00
